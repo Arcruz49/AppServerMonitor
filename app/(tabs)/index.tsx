@@ -45,8 +45,6 @@ export default function HomeScreen() {
   };
 
   const loadData = async () => {
-    setLoading(true);
-
     try {
       const base = apiBase ?? (await detectApi());
 
@@ -72,19 +70,21 @@ export default function HomeScreen() {
         setRam(ramJson);
       }
     } catch (err) {
-      console.log("API ERROR:", err);
       setStatus("Offline");
       setApiBase(null);
       setTemperature(null);
       setRam(null);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
-  }, []);
+    const interval = setInterval(() => {
+      loadData();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [apiBase]);
 
   const getTempColor = (t: number) => {
     if (t < 45) return "#10b981";
@@ -130,7 +130,11 @@ export default function HomeScreen() {
         refreshControl={
           <RefreshControl
             refreshing={loading}
-            onRefresh={loadData}
+            onRefresh={async () => {
+              setLoading(true);
+              await loadData();
+              setLoading(false);
+            }}
             tintColor="#3b82f6"
           />
         }
@@ -223,7 +227,7 @@ export default function HomeScreen() {
         )}
 
         <Text style={styles.footerText}>
-          Puxe para atualizar os dados
+          Atualizando automaticamente
         </Text>
       </ScrollView>
     </View>
